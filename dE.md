@@ -1,3 +1,0 @@
-# CellTypeClassification
-
-Project info
