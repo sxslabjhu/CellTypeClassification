@@ -1,4 +1,5 @@
 # CellTypeClassification
+# Kai Yao, Nash Rochman, Sean Sun
 
 We utilize deep learning algorithms to classify different cell types or different stages of cell differentitation, simply based on cell images acquired from everyday use benchtop microscope. Please refer to [bioRxiv] for detailed introduction of the project.
 
