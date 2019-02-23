@@ -19,6 +19,7 @@ I. Preparation
       
 II. Training
 1. Neural Network Training
-
-III. Application
-1. Cell Type Classification
+      Please place **Training.m** in the same folder as the two folders to different cell types to classify (Here we provided examples of two cell types in our work: HEK-293A and HT1080, each cell type forms a folder with hundreds of single cell images of the cell type prepared with the above described procedure. Then you can run **Training.m** which starts the training process of the network with the training option and network structure design in the code.
+      
+2. Cell Type Classification
+      After training you should get a file **net.mat**, with which you can then test the new single cell images of one of the two cell types to classify which does the cell belong to. Simply apply the code ```classify(net,imdsTest)``` where ```net``` is our trained neural network model and ```imdsTest``` is the imageDatastore for the test files of your choice.
