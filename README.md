@@ -31,8 +31,8 @@ II. Training & Application
 <p align="center">
 <img src="https://github.com/sxslabjhu/CellTypeClassification/blob/master/NetworkStructure.png" alt="CNN Structure" width="80%"/>
 </p>
-
-Please place ```Training.m``` in the same folder as the two folders to different cell types to classify (Here we provided examples of two cell types in our work: HEK-293A and HT1080, each cell type forms a folder with hundreds of single cell images of the cell type prepared with the above described procedure. Then you can run ```Training.m``` which starts the training process of the network with the training option and network structure design in the code.
+      .
+      Please place ```Training.m``` in the same folder as the two folders to different cell types to classify (Here we provided examples of two cell types in our work: HEK-293A and HT1080, each cell type forms a folder with hundreds of single cell images of the cell type prepared with the above described procedure. Then you can run ```Training.m``` which starts the training process of the network with the training option and network structure design in the code.
       
 2. Cell Type Classification
 
