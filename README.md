@@ -21,7 +21,7 @@ I. Preparation
 3. Cell Augmentation 
       As an example of the usage of the augmentation functions and algorithms, please load ```exDbl.mat``` file first, and compile ```ExampleRun.m``` in the same folder. This will give you a feeling of how the rotation and translation, as well as random blobbing works in our package. Please also feel free to make use of any part of the codes in your own way.
       
-II. Training
+II. Training & Application
 1. Neural Network Training
       Please place ```Training.m``` in the same folder as the two folders to different cell types to classify (Here we provided examples of two cell types in our work: HEK-293A and HT1080, each cell type forms a folder with hundreds of single cell images of the cell type prepared with the above described procedure. Then you can run ```Training.m``` which starts the training process of the network with the training option and network structure design in the code.
       
