@@ -6,7 +6,7 @@ Kai Yao, Nash Rochman, Sean Sun*
 <img src="https://github.com/sxslabjhu/CellTypeClassification/blob/master/ClassificationFlow.png" alt="Workflow" width="80%"/>
 
 
-Our group utilize Deep Learning algorithms to classify different cell types or cells from different stages of cell differentitation, simply based on small-sized brightfield cell images acquired from everyday use benchtop microscope. Please refer to [bioRxiv preprint](https://www.biorxiv.org/content/10.1101/533216v1) for detailed introduction of the project.
+Our group utilize Deep Learning algorithms (Convolutional Neural Networks) to classify different cell types or cells from different stages of cell differentitation, simply based on small-sized brightfield cell images acquired from everyday use benchtop microscope. Please refer to [bioRxiv preprint](https://www.biorxiv.org/content/10.1101/533216v1) for detailed introduction of the project.
 
 This repository contains codes for several parts for the proposed cell type / cell morphology classification pipeline, all files are able to be compiled under **MATLAB** 2017b and after (MathWorks Inc.):
 
