@@ -10,7 +10,7 @@ Our group utilize Deep Learning algorithms (Convolutional Neural Networks) to cl
 
 This repository contains codes for several parts for the proposed cell type / cell morphology classification pipeline, all files are able to be compiled under **MATLAB** 2017b and after (MathWorks Inc.):
 
-## I. Preparation
+## I. Data Preparation
 
 1. Cell Cropping
       
