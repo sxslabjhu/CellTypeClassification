@@ -2,7 +2,9 @@
 Kai Yao, Nash Rochman, Sean Sun*
 (ssun@jhu.edu)
 
-<img src="https://github.com/sxslabjhu/CellTypeClassification/blob/master/ClassificationFlow.png" alt=""/>
+
+<img src="https://github.com/sxslabjhu/CellTypeClassification/blob/master/ClassificationFlow.png" alt="Workflow" width="70%"/>
+
 
 Our group utilize Deep Learning algorithms to classify different cell types or cells from different stages of cell differentitation, simply based on small-sized brightfield cell images acquired from everyday use benchtop microscope. Please refer to [bioRxiv] for detailed introduction of the project.
 
