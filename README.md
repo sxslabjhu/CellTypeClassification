@@ -1,4 +1,4 @@
-# CellTypeClassification
+# Cell Type Classification
 Kai Yao, Nash Rochman, Sean Sun*
 (ssun@jhu.edu)
 
