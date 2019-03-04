@@ -3,7 +3,7 @@ clear all;
 close all
 
 % Preparation
-numTrainPercentage = 0.9;
+numTrainPercentage = 0.8;
 parentFile = cd;
 dsFile = cd;
 
