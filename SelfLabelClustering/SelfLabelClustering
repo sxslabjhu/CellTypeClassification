@@ -5,6 +5,8 @@ close all;
 
 %%
 
+%%% DATA PREPARATION
+
 dsFile = cd;
 imdsFlask = imageDatastore(strcat(dsFile,'\ExampleCells\'),'LabelSource','foldernames');
 NumEvaluationCells = length(imdsFlask.Files);
@@ -33,13 +35,12 @@ end
 
 numTrainPercentage = 0.8;
     
-% augmentation
+% AUGMENTATION
 NumRepeats = 5;
 netCell = cell(NumRepeats,1);
 infoCell = cell(NumRepeats,1);
 
-% train network
-
+% TRAIN NETWORK
 for irp = 1:NumRepeats
     
     imds = imageDatastore(foldersCellArray,'LabelSource','foldernames');
@@ -94,7 +95,6 @@ for irp = 1:NumRepeats
         'Plots','training-progress',...
         'ExecutionEnvironment','gpu');
 
-    % train func
     [netCell{irp},infoCell{irp}] = trainNetwork(imdsTrain,layers,options);
 
     save('netCell','netCell')
@@ -106,7 +106,7 @@ save('infoCell','infoCell')
 
 %%
 
-% get Feature Matrices fm25 (288x1)
+%%% GENERATE 'LCA' FEATURE MAPS (FM25)
 
 dsFile = cd;
 imdsFlask = imageDatastore(strcat(dsFile,'\ExampleCells\'),'LabelSource','foldernames');
@@ -134,7 +134,7 @@ save('fm25Cell','fm25Cell');
 
 %%
 
-% do k-means and generate silouhette / elbow plots
+%%% PERFORM K-MEANS AND GENERATE SILHOUETTE / ELBOW PLOT
 
 numK = 50;
 meanS = nan(numK,1);
@@ -148,8 +148,6 @@ for i = 1:numK
 end
 
 [~,idiS] = max(meanS);
-
-%%
 
 idx = kmeans(fm25,idiS);
 
@@ -201,7 +199,7 @@ plot(err)
 
 %%
 
-% k-means simulation
+%%% PERFORM K-MEANS SIMULATION FROM K = 1:MAX(K) DESIGNATED
 
 numK = 100;
 numRepeats = 100;
@@ -230,6 +228,36 @@ s = s/numRepeats
 save('s100','s')
 plot(s)
 
+%%
+
+%%% SAVE CELL IMAGES IN CLUSTERS TO FILES
+
+dsFile = cd;
+
+clusterN = 1:1:11;
+
+for i = 1:length(clusterN)
+   
+    f = find(idx==clusterN(i));
+    high = f(find(f<671));
+    low = f(intersect(find(f>=671),find(f<=1347)));
+    
+    dirName = strcat(dsFile,'\cluster-',int2str(clusterN(i)),'-high-density');
+    mkdir(dirName); 
+    for j = 1:length(high)
+        img = readimage(imdsFlask,high(j));
+        imwrite(img,strcat(dirName,'\',int2str(high(j)),'.jpg'));
+    end
+
+    
+    dirName = strcat(dsFile,'\cluster-',int2str(clusterN(i)),'-low-density');
+    mkdir(dirName); 
+    for j = 1:length(low)
+        img = readimage(imdsFlask,low(j));
+        imwrite(img,strcat(dirName,'\',int2str(low(j)),'.jpg'));     
+    end
+    
+end
 
 %%%%%%%%%%%% THE FOLLOWING LINES ARE ONLY USED FOR DIFFERENT VALIDATION APPROACHES, AND 
 %%%%%%%%%%%% ARE NOT PARTS OF MAIN SELF-LABEL CLUSTERING ALGORITHM. FOR DETAILS PLEASE 
@@ -469,67 +497,9 @@ save('idx3','idx3')
 save('idx4','idx4')
 save('idx5','idx5')
 
-%%
-
-figure
-K = 11;
-
-idx1 = kmeans(fm25Cell{3},K);
-idx2 = kmeans(fm25Cell{5},K);
-
-f01 = cell(K,1);
-for i = 1:K
-    f01{i} = find(idx1==i);
-end
-
-f02 = cell(K,1);
-for i = 1:K
-    f02{i} = find(idx2==i);
-end
-
-mapf1f2 = zeros(K,K);
-
-for i1 = 1:K
-    for i2 = 1:K
-       mapf1f2(i1,i2) =  length(intersect(f01{i1},f02{i2}))/length(f01{i1});
-    end
-end
-
-imagesc(mapf1f2);
-colorbar
 
 
 
-%%
-
-% save clusters to files
-
-dsFile = cd;
-
-clusterN = [4 7 9 11];
-
-for i = 1:length(clusterN)
-   
-    f = find(idx==clusterN(i));
-    high = f(find(f<671));
-    low = f(intersect(find(f>=671),find(f<=1347)));
-    
-    dirName = strcat(dsFile,'\cluster-',int2str(clusterN(i)),'-high-density');
-    mkdir(dirName); 
-    for j = 1:length(high)
-        img = readimage(imdsFlask,high(j));
-        imwrite(img,strcat(dirName,'\',int2str(high(j)),'.jpg'));
-    end
-
-    
-    dirName = strcat(dsFile,'\cluster-',int2str(clusterN(i)),'-low-density');
-    mkdir(dirName); 
-    for j = 1:length(low)
-        img = readimage(imdsFlask,low(j));
-        imwrite(img,strcat(dirName,'\',int2str(low(j)),'.jpg'));     
-    end
-    
-end
 
 
 
