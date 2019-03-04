@@ -9,7 +9,7 @@ dsFile = cd;
 imdsFlask = imageDatastore(strcat(dsFile,'\ExampleCells\'),'LabelSource','foldernames');
 NumEvaluationCells = length(imdsFlask.Files);
 
-maxEpochs = 30;
+maxEpochs = 100;
 miniBatchSize = 100;
 
 NumCellsAsClasses = 2225;
@@ -202,6 +202,7 @@ plot(err)
 %%
 
 % k-means simulation
+
 numK = 100;
 numRepeats = 100;
 meanSCell = cell(numRepeats,1);
@@ -229,6 +230,9 @@ s = s/numRepeats
 save('s100','s')
 plot(s)
 
+
+%%%%%%%%%%%% THE PROGRAMMING FROM NOW ON IS ONLY USED FOR DIFFERENT VALIDATION APPROACHES, AND 
+%%%%%%%%%%%% IS NOT PARTS OF MAIN SELF-LABEL CLUSTERING ALGORITHM.
 
 %%
 
