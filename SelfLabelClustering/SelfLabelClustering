@@ -1,0 +1,530 @@
+clc;
+clear all;
+close all;
+
+
+%%
+
+dsFile = cd;
+imdsFlask = imageDatastore(strcat(dsFile,'\ExampleCells\'),'LabelSource','foldernames');
+NumEvaluationCells = length(imdsFlask.Files);
+
+maxEpochs = 30;
+miniBatchSize = 100;
+
+NumCellsAsClasses = 2225;
+NumAugPerCell = 50;
+
+foldersCellArray = cell(1,NumCellsAsClasses);
+for idxcell = 1 : NumCellsAsClasses
+    lengthIndex = length(int2str(idxcell));
+    lengthZero = 5 - lengthIndex;
+    stringZero = repmat('0',1,lengthZero);
+    dirName = strcat(dsFile,'\TrainingFolder\This-Cell-Augmented-',stringZero,int2str(idxcell));
+    foldersCellArray{idxcell} = dirName;
+    mkdir(dirName);
+    thisCell = double(readimage(imdsFlask,idxcell));
+    imwrite(uint8(thisCell), strcat(dirName,'\','CellNo',int2str(idxcell),'-','1', '.jpg'));
+    parfor idxaug = 2 : NumAugPerCell
+        modCell = modIm(thisCell);
+        imwrite(uint8(modCell), strcat(dirName,'\','CellNo',int2str(idxcell),'-',int2str(idxaug), '.jpg'));
+    end
+end
+
+numTrainPercentage = 0.8;
+    
+% augmentation
+NumRepeats = 5;
+netCell = cell(NumRepeats,1);
+infoCell = cell(NumRepeats,1);
+
+% train network
+
+for irp = 1:NumRepeats
+    
+    imds = imageDatastore(foldersCellArray,'LabelSource','foldernames');
+    [imdsTrain,imdsValidation] = splitEachLabel(imds,numTrainPercentage,'randomize');
+    layers = [
+        imageInputLayer([224 224 1])
+
+        convolution2dLayer(11,32,'Padding','same')
+        batchNormalizationLayer()
+        reluLayer()
+        averagePooling2dLayer(2,'Stride',2)
+
+        convolution2dLayer(5,32,'Padding','same')
+        batchNormalizationLayer()
+        reluLayer()
+        averagePooling2dLayer(2,'Stride',2)
+
+        convolution2dLayer(5,32,'Padding','same')
+        batchNormalizationLayer()
+        reluLayer()
+        averagePooling2dLayer(2,'Stride',2)
+
+        convolution2dLayer(5,32,'Padding','same')
+        batchNormalizationLayer()
+        reluLayer()
+        averagePooling2dLayer(2,'Stride',2)
+
+        convolution2dLayer(5,32,'Padding','same')
+        batchNormalizationLayer()
+        reluLayer()
+        averagePooling2dLayer(2,'Stride',2)
+
+        convolution2dLayer(5,32,'Padding','same')
+        batchNormalizationLayer()
+        reluLayer()
+        averagePooling2dLayer(2,'Stride',2)
+
+        fullyConnectedLayer(NumCellsAsClasses)
+        softmaxLayer
+        classificationLayer];
+
+    options = trainingOptions('sgdm', ...
+        'InitialLearnRate',1e-3, ...
+        'L2Regularization',0.005, ...
+        'MaxEpochs',maxEpochs, ...  
+        'MiniBatchSize',miniBatchSize, ...
+        'Shuffle','every-epoch', ...
+        'ValidationData',imdsValidation,...
+        'ValidationFrequency',2000,...
+        'ValidationPatience',Inf,...
+        'Verbose',0, ...
+        'Plots','training-progress',...
+        'ExecutionEnvironment','gpu');
+
+    % train func
+    [netCell{irp},infoCell{irp}] = trainNetwork(imdsTrain,layers,options);
+
+    save('netCell','netCell')
+    save('infoCell','infoCell') 
+end
+
+save('netCell','netCell')
+save('infoCell','infoCell')
+
+%%
+
+% get Feature Matrices fm25 (288x1)
+
+dsFile = cd;
+imdsFlask = imageDatastore(strcat(dsFile,'\ExampleCells\'),'LabelSource','foldernames');
+NumRobust = 20;
+fm25Cell = cell(5,1);
+
+for irp = 1:NumRepeats
+    irp
+    netthis = netCell{irp};
+    fm25 = zeros(NumCellsAsClasses,288);
+    parfor i = 1:NumCellsAsClasses
+        img = readimage(imdsFlask,i);
+        for i0 = 1:NumRobust
+            modCell = modIm(double(img));
+            a25temp = activations(netthis,modCell,25);
+            fm25temp = reshape(a25temp,[1,3*3*32]);
+            fm25(i,:) = fm25(i,:) + fm25temp;
+        end
+    end
+    fm25 = fm25/20;
+    fm25Cell{irp} = fm25;
+end
+
+save('fm25Cell','fm25Cell');
+
+%%
+
+% do k-means and generate silouhette / elbow plots
+
+numK = 50;
+meanS = nan(numK,1);
+err = meanS;
+for i = 1:numK
+    i
+    [idx,~,errMult] = kmeans(fm25,i);
+    err(i) = sum(errMult);
+    s = silhouette(fm25,idx);
+    meanS(i) = mean(s);
+end
+
+[~,idiS] = max(meanS);
+
+%%
+
+idx = kmeans(fm25,idiS);
+
+% get exBlock3
+[p,reOrd] = sort(idx);
+count = zeros(idiS,1);
+for i = 1:idiS
+    count(i) = sum(p==i);
+end
+exBlock3 = fm25(reOrd,:);
+
+% remake exBlock3
+interval = 50;
+white = zeros(interval,3*3*32);
+for i = 1:idiS-1
+    i
+   exBlock3 = [exBlock3(1:sum(count(1:i))+(i-1)*interval,:) ; white ; exBlock3(sum(count(1:i))+(i-1)*interval+1:end,:)];
+end
+
+figure
+imagesc(fm25)
+title('Simulated Data (NN Distances)')
+xlabel('Image Index')
+ylabel('Image Index')
+colormap(mycolormapgreen);
+cb = colorbar;
+set(cb,'YTick',[])
+
+figure
+plot(meanS,'.','MarkerSize',10)
+title('Determining Optimal Cluster Number')
+xlabel('Number of Clusters')
+ylabel('Mean Silhouette Score')
+
+figure
+imagesc(exBlock3)
+title('Clusterd, Sorted Data (NN Distances)')
+xlabel('Resuffled Image Index')
+ylabel('Resuffled Image Index')
+colormap(mycolormapgreen);
+yticklabels('');
+yticks('')
+cb = colorbar;
+set(cb,'YTick',[])
+
+figure
+plot(err)
+
+
+%%
+
+% k-means simulation
+numK = 100;
+numRepeats = 100;
+meanSCell = cell(numRepeats,1);
+for I = 1:numRepeats
+    I
+    for i = 1:numK
+        I
+        i
+    %     [idx,C,sumd,D,midx,info] = kmedoids(X,i,'Distance',lookupDist);
+        [idx,~,errMult] = kmeans(fm25,i);
+        err(i) = sum(errMult);
+        s = silhouette(fm25,idx);
+        meanS(i) = mean(s);
+    end
+    meanSCell{I}=meanS;
+end
+
+close all;
+s=zeros(numK,1);
+for i = 1:numRepeats
+    sthis = meanSCell{i};
+    s = s + sthis;
+end
+s = s/numRepeats
+save('s100','s')
+plot(s)
+
+
+%%
+
+% density check
+
+K = 11;
+figure;
+idx = idx;
+
+highA = idx(1:312);
+highAcount = zeros(K,1);
+for k = 1:K
+    highAcount(k) = sum(highA==k)/length(highA);
+end
+plot(highAcount,'b'); hold on;
+
+highB = idx(313:670);
+highBcount = zeros(K,1);
+for k = 1:K
+    highBcount(k) = sum(highB==k)/length(highB);
+end
+plot(highBcount,'b'); hold on;
+
+lowA = idx(671:995);
+lowAcount = zeros(K,1);
+for k = 1:K
+    lowAcount(k) = sum(lowA==k)/length(lowA);
+end
+plot(lowAcount,'r'); hold on;
+
+lowB = idx(996:1347);
+lowBcount = zeros(K,1);
+for k = 1:K
+    lowBcount(k) = sum(lowB==k)/length(lowB);
+end
+plot(lowBcount,'r'); hold on;
+
+%%
+
+explode = zeros(1,11);
+labels = {'1','2','3','4','5','6','7','8','9','10','11'};
+c = [158 81 139]/255;
+d = [81 158 139]/255;
+e = [158 139 81]/255;
+f = [139 158 81]/255;
+mycolormappie=[
+0.9 0.9 0.9;
+c;
+d;
+0.9 0.9 0.9;
+0.9 0.9 0.9;
+e;
+0.9 0.9 0.9;
+0.9 0.9 0.9;
+0.9 0.9 0.9;
+f;
+0.9 0.9 0.9;
+];
+
+
+figure;
+subplot(2,2,1)
+pie(lowAcount,explode,labels)
+subplot(2,2,2)
+pie(lowBcount,explode,labels)
+subplot(2,2,3)
+pie(highAcount,explode,labels)
+subplot(2,2,4)
+pie(highBcount,explode,labels)
+set(gca,'FontSize',22,'LineWidth',2)
+load('mycolormappurple.mat')
+load('mycolormappurple.mat')
+colormap(mycolormappie)
+
+%%
+
+% Cluster Representation
+
+kofinterest = 5;
+
+f = find(idx==kofinterest);
+
+figure;
+for i = 1:min(36,length(f))
+    subplot(6,6,i)
+    img = readimage(imdsFlask,f(i));
+    imagesc(img);
+end
+
+high = find(f<671);
+low = intersect(find(f>=671),find(f<=1347));
+
+figure;
+h = high(randperm(numel(high)));
+for i = 1:36
+    subplot(6,6,i)
+    img = readimage(imdsFlask,f(h(i)));
+    imagesc(img);
+end
+
+figure;
+l = low(randperm(numel(low)));
+for i = 1:36
+    subplot(6,6,i)
+    img = readimage(imdsFlask,f(l(i)));
+    imagesc(img);
+end
+
+
+
+
+%%
+
+% D-Matrix
+
+[idx,~,errMult,D] = kmeans(fm25,idiS);
+save('idx','idx');
+save('errMult','errMult');
+save('D-Matrix','D');
+[~,reOrd] = sort(idx);
+figure;
+imagesc(D(reOrd,:));
+
+
+%%
+
+info = infoCell{1};
+subplot(2,1,1)
+% plot training
+plot(info.TrainingAccuracy); hold on; 
+
+info.ValidationAccuracy(isnan(info.ValidationAccuracy)) = [];
+x(1) = 1;
+for i = 1:length(info.ValidationAccuracy)
+   if i == 1
+       x(i) = 1;
+   end
+   if i > 1
+       x(i) = (i-1) * 2000;
+   end
+   y(i) = info.ValidationAccuracy(i);
+end
+plot(x,y,'-or')
+set(gca,'FontSize',10)
+set(gca,'LineWidth',2)
+set(gca,'FontSize',12)
+
+
+subplot(2,1,2)
+plot(info.TrainingLoss); hold on; 
+
+info.ValidationLoss(isnan(info.ValidationLoss)) = [];
+x(1) = 1;
+for i = 1:length(info.ValidationLoss)
+   if i == 1
+       x(i) = 1;
+   end
+   if i > 1
+       x(i) = (i-1) * 2000;
+   end
+   y(i) = info.ValidationLoss(i);
+end
+plot(x,y,'-or')
+set(gca,'FontSize',10)
+set(gca,'LineWidth',2)
+set(gca,'FontSize',12)
+
+%%
+
+% feature map
+
+
+figure;
+act6 = activations(net,im,25); %it's actually the downsampling of act6 not act7
+% for i = 1:32
+%     subplot(8,4,i);
+%     imagesc(act6(:,:,i));
+%     xticks('');
+%     yticks('');
+% end
+
+ncol = 4;
+nrow = 32/ncol;
+
+Act6 = zeros(nrow*3,ncol*3);
+for i = 1:32
+    i
+    r = rem(i,ncol);
+    f = floor((i-1)/ncol);
+    if rem(i,ncol) == 0
+        r = 4;
+    end
+    Act6( f*3+1 : f*3+3 , r*3-2 : r*3 ) = act6(:,:,i);
+end
+
+imagesc(Act6);
+colormap(mycolormapgreen);
+xticks('');
+yticks('');
+cb = colorbar;
+set(cb,'YTick',[])
+
+
+%%
+
+% PCA on fm6
+
+[Cof,r,p] = pca(fm25);
+rdDim = 50;
+recon_fm25 = fm25 * Cof(:,1:rdDim);
+figure;
+imagesc(recon_fm25);
+
+plot(p,'LineWidth',2);
+set(gca,'LineWidth',2);
+
+idx = kmeans(recon_X,K);
+
+
+%% 
+
+
+% cluster mapping
+
+idx1 = kmeans(fm25Cell{1},11);
+idx2 = kmeans(fm25Cell{2},11);
+idx3 = kmeans(fm25Cell{3},11);
+idx4 = kmeans(fm25Cell{4},11);
+idx5 = kmeans(fm25Cell{5},11);
+save('idx1','idx1')
+save('idx2','idx2')
+save('idx3','idx3')
+save('idx4','idx4')
+save('idx5','idx5')
+
+%%
+
+figure
+K = 11;
+
+idx1 = kmeans(fm25Cell{3},K);
+idx2 = kmeans(fm25Cell{5},K);
+
+f01 = cell(K,1);
+for i = 1:K
+    f01{i} = find(idx1==i);
+end
+
+f02 = cell(K,1);
+for i = 1:K
+    f02{i} = find(idx2==i);
+end
+
+mapf1f2 = zeros(K,K);
+
+for i1 = 1:K
+    for i2 = 1:K
+       mapf1f2(i1,i2) =  length(intersect(f01{i1},f02{i2}))/length(f01{i1});
+    end
+end
+
+imagesc(mapf1f2);
+colorbar
+
+
+
+%%
+
+% save clusters to files
+
+dsFile = cd;
+
+clusterN = [4 7 9 11];
+
+for i = 1:length(clusterN)
+   
+    f = find(idx==clusterN(i));
+    high = f(find(f<671));
+    low = f(intersect(find(f>=671),find(f<=1347)));
+    
+    dirName = strcat(dsFile,'\cluster-',int2str(clusterN(i)),'-high-density');
+    mkdir(dirName); 
+    for j = 1:length(high)
+        img = readimage(imdsFlask,high(j));
+        imwrite(img,strcat(dirName,'\',int2str(high(j)),'.jpg'));
+    end
+
+    
+    dirName = strcat(dsFile,'\cluster-',int2str(clusterN(i)),'-low-density');
+    mkdir(dirName); 
+    for j = 1:length(low)
+        img = readimage(imdsFlask,low(j));
+        imwrite(img,strcat(dirName,'\',int2str(low(j)),'.jpg'));     
+    end
+    
+end
+
+
+
