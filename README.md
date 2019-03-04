@@ -40,5 +40,6 @@ This repository contains codes for several parts of the proposed cell type / cel
 
       After the training you should get a file ```net.mat```, with which you can then test new single cell images of one of the two cell types to classify which cell type does the new cell belong to. Simply apply the command of ```classify(net,imdsTest)``` where ```net``` is our trained neural network model and ```imdsTest``` is the [imageDatastore](https://www.mathworks.com/help/matlab/ref/matlab.io.datastore.imagedatastore.html) for the test files of your choice.
       
+*.   Self Label Clustering algorithm has been put into SelfLabelClustering.m as a single file pending separation of various validation parts.
       
 Please refer to MATLAB documentation pages for descriptions and usages for built-in functions applied in the present work. 
