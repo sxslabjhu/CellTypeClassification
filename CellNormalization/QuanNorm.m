@@ -17,7 +17,6 @@ for i = 1:length(rector)
     refV = prctile(refIm(:),pTiles*100);
 
     %Find Percentiles of image and reassign new image
-
     pTileIm = prctile(trialIm(:),pTiles*100);
 
     newIm = trialIm;
