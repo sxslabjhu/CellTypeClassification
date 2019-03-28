@@ -1,5 +1,5 @@
 # Cell Type Classification
-Kai Yao, Nash Rochman, Sean Sun
+Kai Yao, Nash Rochman, Sean Sun (*ssun@jhu.edu)
 
 Institute for NanobioTechnology, Johns Hopkins University, Baltimore, MD, USA
 
